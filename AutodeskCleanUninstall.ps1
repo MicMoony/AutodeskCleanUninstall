@@ -4,8 +4,7 @@ Script Name:  AutodeskCleanUninstall.ps1
 Author:       MicMoony
 Version:      1.0
 Created:      2025-02-21
-License:      This script is provided "as-is" without warranty of any kind. 
-              You may use, modify, and distribute it at your own risk.
+License:      MIT License — https://opensource.org/licenses/MIT
 
 Description:  Automates the Autodesk clean uninstall process based on the 
               official Autodesk documentation:
@@ -15,7 +14,22 @@ Description:  Automates the Autodesk clean uninstall process based on the
               files, and registry entries to ensure a clean environment for 
               reinstallation.
 
+Usage:        1. Open PowerShell as Administrator.
+              2. Navigate to the folder containing AutodeskCleanUninstall.ps1.
+              3. Run the script:
+                 .\AutodeskCleanUninstall.ps1
+              4. Follow on-screen prompts for confirmations if required.
+              5. After completion, review the generated log file.
+
 Requirements: Must be run with administrative privileges.
+
+Disclaimer:   This script is provided "as-is" without warranty of any kind. 
+              Use at your own risk. Ensure you have backups of important data before running 
+              this script. It removes software and registry entries and may 
+              affect your system if used incorrectly.
+
+Notes:        The script generates a log file in the following folder:
+              C:\Temp\Logs\AutodeskCleanUninstall_YYYYMMDD_HHMMSS.log
 -----------------------------------------------------------------------------
 #>
 
@@ -291,4 +305,5 @@ if ($genuineService) {
 }
 
 Write-HostWrapped "Autodesk Clean Uninstall completed. Please review any remaining files or registry keys manually."
+
 Write-Host "For a full report, check the log file: $logFile"
