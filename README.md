@@ -8,6 +8,7 @@ Official Autodesk documentation: [Clean Uninstall](https://www.autodesk.com/supp
 - Uninstalls Autodesk applications and components.
 - Removes residual files and folders.
 - Cleans related registry entries.
+- Generates a detailed log file of the uninstall process.
 - Requires minimal manual intervention.
 - Provides a foundation for clean reinstallation.
 
@@ -23,9 +24,12 @@ Official Autodesk documentation: [Clean Uninstall](https://www.autodesk.com/supp
    ```powershell
    .\AutodeskCleanUninstall.ps1
 4. Follow any on-screen prompts if required.
+5. After completion, review the generated log file.
 
-## License
-This script is provided "as-is" without warranty of any kind. Use at your own risk. You may use, modify, and distribute it freely.
+## Notes
+- Log files are generated in `C:\Temp\Logs` and follow the naming convention: `AutodeskCleanUninstall_YYYYMMDD_HHMMSS.log`.
+- Review the log file after running the script for a detailed record of all actions.
 
 ## Disclaimer
-Ensure you have backups of important data before running the script. This script removes software and registry entries and may affect your system if used incorrectly.
+This script is provided "as-is" without warranty of any kind. Use at your own risk.
+Ensure you have backups of important data before running the script. It removes software and registry entries and may affect your system if used incorrectly.
