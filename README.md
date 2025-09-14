@@ -1,8 +1,10 @@
 # AutodeskCleanUninstall.ps1
 
-This is a PowerShell script that automates the Autodesk clean uninstall process. It follows the official Autodesk guidelines to remove applications, components, residual files, and registry entries, ensuring a clean environment for reinstallation.
+Don’t you sometimes dream of a real fresh start?
 
-Official Autodesk documentation: [Clean Uninstall](https://www.autodesk.com/support/technical/article/caas/sfdcarticles/sfdcarticles/Clean-uninstall.html)
+This PowerShell script automates the Autodesk clean uninstall process. It follows the official Autodesk guidelines to remove applications, components, residual files, and registry entries, ensuring a clean environment for reinstallation.
+
+You can find the official Autodesk documentation [here](https://www.autodesk.com/support/technical/article/caas/sfdcarticles/sfdcarticles/Clean-uninstall.html).
 
 ## Features
 - Uninstalls Autodesk applications and components.
@@ -29,6 +31,12 @@ Official Autodesk documentation: [Clean Uninstall](https://www.autodesk.com/supp
 ## Notes
 - Log files are generated in `C:\Temp\Logs` and follow the naming convention: `AutodeskCleanUninstall_YYYYMMDD_HHMMSS.log`.
 - Review the log file after running the script for a detailed record of all actions.
+- Most folders and registry keys are automatically removed by the script. If some items remain because of insufficient permissions or custom installation paths, refer to the [Manual Steps](#manual-steps) section.
+
+## Manual Steps
+Some steps cannot be fully automated and may require user intervention:
+
+- Run the Microsoft Program Install and Uninstall Troubleshooter to remove any residual Autodesk software: https://aka.ms/Program_Install_and_Uninstall
 
 ## Disclaimer
 This script is provided "as-is" without warranty of any kind. Use at your own risk.
