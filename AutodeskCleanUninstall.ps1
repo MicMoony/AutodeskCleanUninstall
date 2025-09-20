@@ -1,4 +1,4 @@
-﻿<#
+<#
 -----------------------------------------------------------------------------
 Script Name:  AutodeskCleanUninstall.ps1
 Author:       MicMoony
@@ -158,10 +158,6 @@ if ($uninstallToolPath) {
 
 # Step 3: Open Control Panel and Uninstall Autodesk Software
 Write-Host "Searching for Autodesk software to uninstall..."
-$autodeskSoftware = Get-WmiObject Win32_Product | Where-Object { $_.Vendor -like "*Autodesk*" }
-
-# Flag to track uninstall failures
-$uninstallFailed = $false  
 
 # Exclude Autodesk software that will be handled later in the script
 $excludeList = @(
@@ -170,11 +166,26 @@ $excludeList = @(
     "Autodesk Genuine Service"
 )
 
-$autodeskSoftwareToUninstall = $autodeskSoftware | Where-Object { $excludeList -notcontains $_.Name }
+# Retrieve installed software from registry
+$autodeskSoftware = Get-ItemProperty `
+    HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*, `
+    HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*, `
+    HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* -ErrorAction SilentlyContinue |
+    Where-Object {
+        $_.DisplayName -and
+        ((-not $_.PSObject.Properties.Match('SystemComponent')) -or ($_.SystemComponent -ne 1)) -and
+        ($_.Publisher -like '*Autodesk*')
+    } |
+    Select-Object DisplayName, DisplayVersion, Publisher |
+    Sort-Object DisplayName |
+    Where-Object { $excludeList -notcontains $_.DisplayName }
 
-if ($autodeskSoftwareToUninstall) {
+# Flag to track uninstall failures
+$uninstallFailed = $false  
+
+if ($autodeskSoftware) {
     Write-Host "The following Autodesk software was found:"
-    $autodeskSoftwareToUninstall | ForEach-Object { Write-Host "- $($_.Name)" }
+    $autodeskSoftware | ForEach-Object { Write-Host "- $($_.DisplayName)" }
 
     # Prompt user before proceeding
     $confirmation = Read-Host "Press 'Y' to continue with uninstallation or any other key to cancel"
@@ -183,19 +194,22 @@ if ($autodeskSoftwareToUninstall) {
         exit
     }
 
-    $autodeskSoftwareToUninstall | ForEach-Object {
-        Write-Host "Uninstalling $($_.Name)..."
-        try {
-            $result = $_.Uninstall()
-            if ($result -eq 0) {
-                Write-Host "Successfully uninstalled $($_.Name)."
-            } else {
-                Write-Host "Failed to uninstall $($_.Name). Exit code: $result"
+    $autodeskSoftware | ForEach-Object {
+        Write-Host "Uninstalling $($_.DisplayName)..."
+        if ($_.PSChildName -and (Test-Path $_.PSPath)) {
+            try {
+                $uninstallString = ($_ | Get-ItemProperty).UninstallString
+                if ($uninstallString) {
+                    Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$uninstallString /quiet /norestart`"" -Wait
+                    Write-Host "Successfully uninstalled $($_.DisplayName)."
+                } else {
+                    Write-Host "Failed to uninstall. No uninstall string found for $($_.DisplayName)."
+                    $uninstallFailed = $true
+                }
+            } catch {
+                Write-Host "Error uninstalling $($_.DisplayName): $_"
                 $uninstallFailed = $true
             }
-        } catch {
-            Write-Host "Error uninstalling $($_.Name): $_"
-            $uninstallFailed = $true
         }
     }
 } else {
@@ -267,6 +281,7 @@ foreach ($folder in $foldersToDelete) {
     if (Test-Path $folder) {
         Write-Host "Deleting folder: $folder"
         Remove-Item -Path $folder -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Host "Autodesk folders removed."
     } else {
         Write-Host "Folder not found: $folder"
     }
@@ -281,29 +296,43 @@ foreach ($key in $regKeys) {
     if (Test-Path $key) {
         Write-Host "Removing registry key: $key"
         Remove-Item -Path $key -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Host "Registry keys removed"
     } else {
         Write-Host "Registry key not found: $key"
     }
 }
 
 # Step 11: Uninstall Autodesk Genuine Service
-$genuineService = Get-WmiObject Win32_Product | Where-Object { $_.Name -match "Autodesk Genuine Service" }
+$genuineService = Get-ItemProperty `
+    HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*, `
+    HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*, `
+    HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* -ErrorAction SilentlyContinue |
+    Where-Object {
+        $_.DisplayName -and ($_.DisplayName -match "Autodesk Genuine Service")
+    }
+
 if ($genuineService) {
     Write-Host "Uninstalling Autodesk Genuine Service..."
-    try {
-        $result = $genuineService.Uninstall()
-        if ($result -eq 0) {
-            Write-Host "Successfully uninstalled Autodesk Genuine Service."
-        } else {
-            Write-Host "Failed to uninstall Autodesk Genuine Service. Exit code: $result"
+    $uninstallFailed = $false
+
+    $genuineService | ForEach-Object {
+        try {
+            $uninstallString = ($_ | Get-ItemProperty).UninstallString
+            if ($uninstallString) {
+                Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$uninstallString /quiet /norestart`"" -Wait
+                Write-Host "Successfully uninstalled Autodesk Genuine Service."
+            } else {
+                Write-Host "Failed to uninstall. No uninstall string found for Autodesk Genuine Service."
+                $uninstallFailed = $true
+            }
+        } catch {
+            Write-Host "Error uninstalling Autodesk Genuine Service: $_"
+            $uninstallFailed = $true
         }
-    } catch {
-        Write-Host "Error uninstalling Autodesk Genuine Service: $_"
     }
 } else {
     Write-Host "Autodesk Genuine Service not found."
 }
 
 Write-HostWrapped "Autodesk Clean Uninstall completed. Please review any remaining files or registry keys manually."
-
 Write-Host "For a full report, check the log file: $logFile"
