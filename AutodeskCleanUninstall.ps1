@@ -36,7 +36,8 @@ Notes:        The script generates a log file in the following folder:
 # Function to write text wrapped to the terminal's width without breaking words
 function Write-HostWrapped {
     param (
-        [string]$text
+        [string]$text,
+        [ConsoleColor]$ForegroundColor = "White"
     )
 
     # Get the current terminal width
@@ -65,7 +66,7 @@ function Write-HostWrapped {
 
     # Print any remaining text in the last line
     if ($line.Length -gt 0) {
-        Write-Host $line
+        Write-Host $line -ForegroundColor $ForegroundColor
     }
 }
 
@@ -146,15 +147,19 @@ if (-not $uninstallToolPath) {
     }
 }
 
+Write-Host ""
+
 # Step 2: Open Uninstall Tool and Uninstall Autodesk Software
 if ($uninstallToolPath) {
     Write-Host "Autodesk Uninstall Tool found at: $uninstallToolPath"
     Write-Host "Launching Autodesk Uninstall Tool..."
     Start-Process -FilePath $uninstallToolPath -Wait
-    Write-Host "Autodesk Uninstall Tool process completed."
+    Write-Host "Autodesk Uninstall Tool process completed." -ForegroundColor Green
 } else {
-    Write-HostWrapped "Skipping steps 1 and 2 because this tool is only available for Autodesk software that does not use the new installation experience."
+    Write-HostWrapped "Skipping step 2 because this tool is only available for Autodesk software that does not use the new installation experience." -ForegroundColor Yellow
 }
+
+Write-Host ""
 
 # Step 3: Open Control Panel and Uninstall Autodesk Software
 Write-Host "Searching for Autodesk software to uninstall..."
@@ -184,13 +189,13 @@ $autodeskSoftware = Get-ItemProperty `
 $uninstallFailed = $false  
 
 if ($autodeskSoftware) {
-    Write-Host "The following Autodesk software was found:"
+    Write-Host "`nThe following Autodesk software was found:`n"
     $autodeskSoftware | ForEach-Object { Write-Host "- $($_.DisplayName)" }
 
     # Prompt user before proceeding
-    $confirmation = Read-Host "Press 'Y' to continue with uninstallation or any other key to cancel"
+    $confirmation = Read-Host "`nPress 'Y' to continue with uninstallation or any other key to cancel"
     if ($confirmation -ne "Y" -and $confirmation -ne "y") {
-        Write-Host "Uninstallation canceled by user."
+        Write-Host "Uninstallation canceled by user.`n" -ForegroundColor Yellow
         exit
     }
 
@@ -201,54 +206,65 @@ if ($autodeskSoftware) {
                 $uninstallString = ($_ | Get-ItemProperty).UninstallString
                 if ($uninstallString) {
                     Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$uninstallString /quiet /norestart`"" -Wait
-                    Write-Host "Successfully uninstalled $($_.DisplayName)."
+                    Write-Host "Successfully uninstalled $($_.DisplayName)." -ForegroundColor Green
                 } else {
-                    Write-Host "Failed to uninstall. No uninstall string found for $($_.DisplayName)."
+                    Write-Host "Failed to uninstall. No uninstall string found for $($_.DisplayName)." -ForegroundColor Red
                     $uninstallFailed = $true
                 }
             } catch {
-                Write-Host "Error uninstalling $($_.DisplayName): $_"
+                Write-Host "Error uninstalling $($_.DisplayName): $_" -ForegroundColor Red
                 $uninstallFailed = $true
             }
         }
     }
 } else {
-    Write-Host "No Autodesk software found."
+    Write-Host "No Autodesk software found.`n" -ForegroundColor Yellow
+    exit
 }
+
+Write-Host ""
 
 # Step 4: Run RemoveODIS.exe to Uninstall Autodesk Access
 $odisPath = "C:\Program Files\Autodesk\AdODIS\V1\RemoveODIS.exe"
 if (Test-Path $odisPath) {
     Write-Host "Running RemoveODIS.exe..."
-    Start-Process -FilePath $odisPath -Wait
-    Write-Host "Successfully uninstalled Autodesk Access."
+    Start-Process -FilePath $odisPath -ArgumentList "--mode unattended" -Wait
+    Write-Host "Successfully uninstalled Autodesk Access." -ForegroundColor Green
 } else {
-    Write-Host "RemoveODIS.exe not found, skipping..."
+    Write-Host "RemoveODIS.exe not found, skipping..." -ForegroundColor Yellow
 }
+
+Write-Host ""
 
 # Step 5: Run Uninstall.exe to Uninstall Autodesk Licensing Desktop Service
 $licensingPath = "C:\Program Files (x86)\Common Files\Autodesk Shared\AdskLicensing\uninstall.exe"
 if (Test-Path $licensingPath) {
     Write-Host "Running uninstall.exe..."
     Start-Process -FilePath $licensingPath -Wait
-    Write-Host "Successfully uninstalled Autodesk Licensing Desktop Service."
+    Write-Host "Successfully uninstalled Autodesk Licensing Desktop Service." -ForegroundColor Green
 } else {
-    Write-Host "Uninstall.exe not found, skipping..."
+    Write-Host "Uninstall.exe not found, skipping..." -ForegroundColor Yellow
 }
+
+Write-Host ""
 
 # Step 6: Use Microsoft Troubleshooter (Manual Step Required)
 Write-HostWrapped "Please download and run the Microsoft Program Install and Uninstall Troubleshooter to remove any residual Autodesk software: https://aka.ms/Program_Install_and_Uninstall"
 
 # Stop execution if at least one uninstall failed
 if ($uninstallFailed) {
-    Write-Host "Skipping further cleanup due to previous uninstall failures."
+    Write-Host "Skipping further cleanup due to previous uninstall failures." -ForegroundColor Yellow
     exit
 }
+
+Write-Host ""
 
 # Step 7: Clear Temp Folder
 Write-Host "Clearing Temp Folder..."
 Get-ChildItem -Path $tempPath -Recurse -Force | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
-Write-Host "Temp folder cleared."
+Write-Host "Temp folder cleared." -ForegroundColor Green
+
+Write-Host ""
 
 # Step 8: Remove FLEXnet Files
 $flexnetPath = "C:\ProgramData\FLEXnet"
@@ -259,13 +275,15 @@ if (Test-Path $flexnetPath) {
     if ($filesToRemove) {
         Write-Host "Removing FLEXnet files..."
         $filesToRemove | Remove-Item -Force -ErrorAction SilentlyContinue
-        Write-Host "FLEXnet files removed."
+        Write-Host "FLEXnet files removed." -ForegroundColor Green
     } else {
-        Write-Host "No matching FLEXnet files found."
+        Write-Host "No matching FLEXnet files found." -ForegroundColor Yellow
     }
 } else {
-    Write-Host "FLEXnet folder not found."
+    Write-Host "FLEXnet folder not found." -ForegroundColor Yellow
 }
+
+Write-Host ""
 
 # Step 9: Remove Autodesk Folders
 $foldersToDelete = @(
@@ -281,11 +299,13 @@ foreach ($folder in $foldersToDelete) {
     if (Test-Path $folder) {
         Write-Host "Deleting folder: $folder"
         Remove-Item -Path $folder -Recurse -Force -ErrorAction SilentlyContinue
-        Write-Host "Autodesk folders removed."
+        Write-Host "Autodesk folders removed." -ForegroundColor Green
     } else {
-        Write-Host "Folder not found: $folder"
+        Write-Host "Folder not found: $folder" -ForegroundColor Yellow
     }
 }
+
+Write-Host ""
 
 # Step 10: Remove Registry Keys
 $regKeys = @(
@@ -296,11 +316,13 @@ foreach ($key in $regKeys) {
     if (Test-Path $key) {
         Write-Host "Removing registry key: $key"
         Remove-Item -Path $key -Recurse -Force -ErrorAction SilentlyContinue
-        Write-Host "Registry keys removed"
+        Write-Host "Registry keys removed" -ForegroundColor Green
     } else {
-        Write-Host "Registry key not found: $key"
+        Write-Host "Registry key not found: $key" -ForegroundColor Yellow
     }
 }
+
+Write-Host ""
 
 # Step 11: Uninstall Autodesk Genuine Service
 $genuineService = Get-ItemProperty `
@@ -320,19 +342,23 @@ if ($genuineService) {
             $uninstallString = ($_ | Get-ItemProperty).UninstallString
             if ($uninstallString) {
                 Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$uninstallString /quiet /norestart`"" -Wait
-                Write-Host "Successfully uninstalled Autodesk Genuine Service."
+                Write-Host "Successfully uninstalled Autodesk Genuine Service." -ForegroundColor Green
             } else {
-                Write-Host "Failed to uninstall. No uninstall string found for Autodesk Genuine Service."
+                Write-Host "Failed to uninstall. No uninstall string found for Autodesk Genuine Service." -ForegroundColor Red
                 $uninstallFailed = $true
             }
         } catch {
-            Write-Host "Error uninstalling Autodesk Genuine Service: $_"
+            Write-Host "Error uninstalling Autodesk Genuine Service: $_" -ForegroundColor Red
             $uninstallFailed = $true
         }
     }
 } else {
-    Write-Host "Autodesk Genuine Service not found."
+    Write-Host "Autodesk Genuine Service not found." -ForegroundColor Yellow
 }
+
+Write-Host ""
 
 Write-HostWrapped "Autodesk Clean Uninstall completed. Please review any remaining files or registry keys manually."
 Write-Host "For a full report, check the log file: $logFile"
+
+Write-Host ""
