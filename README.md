@@ -8,10 +8,10 @@ You can find the official Autodesk documentation [here](https://www.autodesk.com
 
 ## Features
 - Uninstalls Autodesk applications and components.
+- Built-in safeguard to prevent unintended removals.
 - Removes residual files and folders.
 - Cleans related registry entries.
 - Generates a detailed log file of the uninstall process.
-- Requires minimal manual intervention.
 - Provides a foundation for clean reinstallation.
 
 ## Requirements
@@ -21,16 +21,21 @@ You can find the official Autodesk documentation [here](https://www.autodesk.com
 
 ## Usage
 1. Open PowerShell as Administrator.
-2. Navigate to the folder containing `AutodeskCleanUninstall.ps1`.
-3. Execute the script:
+> [!IMPORTANT]
+> In most environments, script execution is not permitted by default. Therefore, run this command first:
+> ```powershell
+> Set-ExecutionPolicy Bypass -Scope Process -Force
+3. Navigate to the folder containing `AutodeskCleanUninstall.ps1`, e.g. your Downloads folder.
+   ```powershell
+   cd C:\Users\<userprofile>\Downloads
+5. Execute the script:
    ```powershell
    .\AutodeskCleanUninstall.ps1
-4. Follow any on-screen prompts if required.
-5. After completion, review the generated log file.
+6. If Autodesk software is found, it will be displayed in a structured list. Press 'Y' to continue with the uninstallation.
+7. After completion, a detailed record of all actions can be found in the log file.
 
 ## Notes
 - Log files are generated in `C:\Temp\Logs` and follow the naming convention: `AutodeskCleanUninstall_YYYYMMDD_HHMMSS.log`.
-- Review the log file after running the script for a detailed record of all actions.
 - Most folders and registry keys are automatically removed by the script. If some items remain because of insufficient permissions or custom installation paths, refer to the [Manual Steps](#manual-steps) section.
 
 ## Manual Steps
